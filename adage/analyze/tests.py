@@ -437,6 +437,32 @@ class APIResourceTestCase(ResourceTestCaseMixin, TestCase):
         self.expressionvalueURI = self.baseURI + 'expressionvalue/'
 
     @staticmethod
+    def get_mlmodel_by_title(title):
+        """
+        Create or retrieve an MLModel with title=title and a default Organism
+        """
+        if Organism.objects.exists():
+            organism = Organism.objects.first()
+        else:
+            organism = factory.create(Organism)
+
+        ml_model, _ = MLModel.objects.get_or_create(title=title,
+                                                    organism=organism)
+        return ml_model
+
+    @staticmethod
+    def create_nodes(node_counter, ml_model):
+        """
+        Create node_counter Nodes using the given ml_model. This function will
+        check for existing nodes first and generate automatic node names
+        to avoid conflicting with other nodes created by this function.
+        """
+        for i in xrange(Node.objects.filter(mlmodel=ml_model).count(),
+                        node_counter):
+            node_name = "node " + str(i + 1)
+            Node.objects.create(name=node_name, mlmodel=ml_model)
+
+    @staticmethod
     def create_activities(node_counter):
         """
         Create activity related records. "node_counter" is the number of
@@ -444,15 +470,10 @@ class APIResourceTestCase(ResourceTestCaseMixin, TestCase):
         Note that "factory.create(ModelName, n)" in fixtureless module is not
         used here because it does NOT gurantee unique_together constraint.
         """
-        organism = factory.create(Organism)
-        ml_model_1 = MLModel.objects.create(title="test model #1",
-                                            organism=organism)
-        ml_model_2 = MLModel.objects.create(title="test model #2",
-                                            organism=organism)
-        for i in xrange(node_counter // 2):
-            node_name = "node " + str(i + 1)
-            Node.objects.create(name=node_name, mlmodel=ml_model_1)
-            Node.objects.create(name=node_name, mlmodel=ml_model_2)
+        ml_model_1 = APIResourceTestCase.get_mlmodel_by_title("test model #1")
+        APIResourceTestCase.create_nodes(node_counter // 2, ml_model_1)
+        ml_model_2 = APIResourceTestCase.get_mlmodel_by_title("test model #2")
+        APIResourceTestCase.create_nodes(node_counter // 2, ml_model_2)
 
         for s in Sample.objects.all():
             for n in Node.objects.all():
@@ -1011,7 +1032,7 @@ class APIResourceTestCase(ResourceTestCaseMixin, TestCase):
     def test_expressionvalue_big_post(self):
         """
         Test that we can use POST to retrieve more ExpressionValue records
-        that would fit in the ~4k-char limit for a GET
+        than would fit in the ~4k-char limit for a GET
         """
         # we select 1100 genes because representing those gene IDs will require
         # >= (9*1 + 90*2 + 900*3 + 101*4)chars + (1100-1)delimiters = 4392 char
@@ -1024,4 +1045,26 @@ class APIResourceTestCase(ResourceTestCaseMixin, TestCase):
         self.assertEqual(
             self.deserialize(resp)['meta']['total_count'],
             self.expressionvalue_count
+        )
+
+    def test_node_big_post(self):
+        """
+        Test that we can use POST to retrieve more Node records than would fit
+        in the ~4k-char limit for a GET
+        """
+        import pdb; pdb.set_trace()
+        self.nodeMultipleURI = self.baseURI + 'node/post_multiple/'
+        # we select 1100 nodes because representing those node IDs will require
+        # >= (9*1 + 90*2 + 900*3 + 101*4)chars + (1100-1)delimiters = 4392 char
+        self.create_nodes(1100,
+                          self.get_mlmodel_by_title("test model #1"))
+        node_ids = ';'.join([str(n.id) for n in Node.objects.all()])
+        resp = self.api_client.post(self.nodeMultipleURI, data={
+            'node_ids': node_ids,
+            'content_type': 'application/x-www-form-urlencoded'
+        })
+        self.assertValidJSONResponse(resp)
+        self.assertEqual(
+            self.deserialize(resp)['meta']['total_count'],
+            1100
         )

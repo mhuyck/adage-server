@@ -294,15 +294,21 @@ class NodeResource(ModelResource):
     def dispatch_multiple(self, request, **kwargs):
         return self.dispatch('multiple', request, **kwargs)
 
+    def get_multiple(self, request, **kwargs):
+        import pdb; pdb.set_trace()
+        return super(NodeResource, self).get_multiple(request, **kwargs)
+
     def post_multiple(self, request, **kwargs):
         """
         use POSTs for retrieving long lists of Nodes
         """
         # we use the built-in Tastypie get_multiple implementation
         # but to do so, we need to convert the request to a GET
+        import pdb; pdb.set_trace()
         request.method = 'GET'  # override the incoming POST
         converted_request = convert_post_to_VERB(request, 'GET')
         kwarg_name = '%s_list' % self._meta.detail_uri_name
+        # TODO stopped here: need to strip any delimiters off the .body (regex time?)
         kwargs[kwarg_name] = converted_request.body
         return self.get_multiple(converted_request, **kwargs)
 

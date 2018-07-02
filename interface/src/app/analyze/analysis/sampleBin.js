@@ -223,7 +223,9 @@ MathFuncts, errGen, MlModelTracker, Heatmap) {
 
       // verify that all requested samples have activity
       var groupedSamples = sg['base-group'].concat(sg['comp-group']);
-      var notCached = Activity.listSamplesNotCached(groupedSamples);
+      var notCached = Activity.listSamplesNotCached(
+        MlModelTracker.id, groupedSamples
+      );
       if (notCached.length > 0) {
         // FIXME this needs to be smarter... retrieve any missing Activity
         // 1. refactor Activity-related functions from heatmap.service.js and
@@ -260,7 +262,10 @@ MathFuncts, errGen, MlModelTracker, Heatmap) {
               //      plucking the activity `.value` for each sample within the
               //      `index`th signature from the `Activity.cache`
               //      [inner .map()]
-              var cachedActivity = Activity.cache.get(sampleId);
+              var cachedActivity = Activity.getCache(
+                MlModelTracker.id,
+                sampleId
+              );
               if (cachedActivity[index].signature !== signatureId) {
                 // ensure we're pulling out the right signature
                 $log.error(

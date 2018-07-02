@@ -59,12 +59,13 @@ angular.module('adage.heatmap.service', [
             // we haven't yet loaded full sample data so yield a stubby version
             return {id: val};
           }
-          sampleObject.activity = Activity.cache.get(val).map(
-            // distill .activity to an array of just "value"s
-            function(val) {
-              return val.value;
-            }
-          );
+          sampleObject.activity = Activity.getCache(Heatmap.mlmodel.id, val)
+            .map(
+              // distill .activity to an array of just "value"s
+              function(val) {
+                return val.value;
+              }
+            );
           return sampleObject;
         });
       },
@@ -80,7 +81,8 @@ angular.module('adage.heatmap.service', [
 
         // (1) first, we obtain a list of signatures by retrieving signature
         //     activity for the first sample in our heatmap
-        var firstSampleSignatures = Activity.cache.get(
+        var firstSampleSignatures = Activity.getCache(
+          Heatmap.mlmodel.id,
           this.vegaData.samples[0]
         );
         // (2a) next, we build a new array (`retval`) comprised of
@@ -95,7 +97,10 @@ angular.module('adage.heatmap.service', [
               //      plucking the activity `.value` for each sample within the
               //      `index`th signature from `Activity.cache` [inner .map()]
               function(sampleId) {
-                var cachedActivity = Activity.cache.get(sampleId);
+                var cachedActivity = Activity.getCache(
+                  Heatmap.mlmodel.id,
+                  sampleId
+                );
                 if (cachedActivity[index].signature !== val.signature) {
                   // ensure we're pulling out the right signature
                   $log.error(
@@ -137,7 +142,10 @@ angular.module('adage.heatmap.service', [
           var excludeSamples = [];
 
           Heatmap.vegaData.samples.forEach(function(sampleID) {
-            var sampleActivity = Activity.cache.get(sampleID);
+            var sampleActivity = Activity.getCache(
+              Heatmap.mlmodel.id,
+              sampleID
+            );
             if (sampleActivity === undefined) {
               // this sample has no activity data, so move it out of the heatmap
               $log.error(

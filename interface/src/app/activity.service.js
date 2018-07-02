@@ -9,34 +9,40 @@ angular.module('adage.activity.service', [
 
     Activity.cache = $cacheFactory('activity');
 
-    var loadCache = function(responseObject) {
-      if (responseObject && responseObject.objects.length > 0) {
-        var sampleID = responseObject.objects[0].sample;
-        $log.info('response[0]', responseObject.objects[0]);
-        Activity.cache.put(sampleID, responseObject.objects);
-        $log.info('populating cache with ' + sampleID);
-      }
-      // Note: no else clause here on purpose.
-      // An empty responseObject means no activity data for this sample.
-      // We detect this error and handle it in updateHeatmapActivity.
+    Activity.putCache = function(mlmodelID, sampleID, value) {
+      var cacheID = '' + mlmodelID + '-' + sampleID;
+      Activity.cache.put(cacheID, value);
+      $log.info('populating cache with ' + sampleID);
+      return value;
+    };
+    Activity.getCache = function(mlmodelID, sampleID) {
+      var cacheID = '' + mlmodelID + '-' + sampleID;
+      return Activity.cache.get(cacheID);
     };
 
-    Activity.getForSample = function(mlmodel, sampleID) {
+    Activity.getForSample = function(mlmodelID, sampleID) {
       return $q(function(resolve, reject) {
-        var sampleActivity = Activity.cache.get(sampleID);
+        var sampleActivity = Activity.getCache(mlmodelID, sampleID);
         if (!!sampleActivity) {
           resolve(sampleActivity);
         } else {
           $log.info('cache miss for ' + sampleID);
           // cache miss, so populate the entry
           Activity.get({
-            'mlmodel': mlmodel,
+            'mlmodel': mlmodelID,
             'sample': sampleID,
             'order_by': 'signature'
           }).$promise
-            .then(loadCache)
+            .then(function(responseObject) {
+              if (responseObject && responseObject.objects.length > 0) {
+                Activity.putCache(mlmodelID, sampleID, responseObject.objects);
+              }
+              // Note: no else clause here on purpose.
+              // An empty responseObject means no activity data for this sample.
+              // We detect this error and handle it in updateHeatmapActivity.
+            })
             .then(function() {
-              resolve(Activity.cache.get(sampleID));
+              resolve(Activity.getCache(mlmodelID, sampleID));
             })
             .catch(function(httpResponse) {
               reject(httpResponse);
@@ -45,11 +51,10 @@ angular.module('adage.activity.service', [
       });
     };
 
-
-    Activity.listSamplesNotCached = function(sampleList) {
+    Activity.listSamplesNotCached = function(mlmodelID, sampleList) {
       var notCached = [];
       sampleList.forEach(function(sampleID) {
-        if (!Activity.cache.get(sampleID)) {
+        if (!Activity.getCache(mlmodelID, sampleID)) {
           notCached.push(sampleID);
         }
       });

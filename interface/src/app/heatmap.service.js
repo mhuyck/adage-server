@@ -131,16 +131,6 @@ angular.module('adage.heatmap.service', [
           $log.warn('Heatmap.loadData called before setting sample list');
           return;
         }
-        var loadCache = function(responseObject) {
-          if (responseObject && responseObject.objects.length > 0) {
-            var sampleID = responseObject.objects[0].sample;
-            Activity.cache.put(sampleID, responseObject.objects);
-            $log.info('populating cache with ' + sampleID);
-          }
-          // Note: no else clause here on purpose.
-          // An empty responseObject means no activity data for this sample.
-          // We detect this error and handle it in updateHeatmapActivity.
-        };
         var updateHeatmapActivity = function() {
           // when all promises are fulfilled, we can update vegaData
           var newActivity = [];
@@ -182,18 +172,11 @@ angular.module('adage.heatmap.service', [
         // preflight the cache and request anything missing
         var activityPromises = [];
         Heatmap.vegaData.samples.forEach(function(sampleID) {
-          var sampleActivity = Activity.cache.get(sampleID);
-          if (!sampleActivity) {
-            $log.info('cache miss for ' + sampleID);
-            // cache miss, so populate the entry
-            var p = Activity.get({
-              'mlmodel': Heatmap.mlmodel.id,
-              'sample': sampleID,
-              'order_by': 'signature'
-            }).$promise;
-            activityPromises.push(p);
-            p.then(loadCache).catch(Heatmap.logError);
-          }
+          // FIXME this step needs to happen when sample is added
+          // (since we don't always view the heatmap before a volcano plot now)
+          var p = Activity.getForSample(Heatmap.mlmodel.id, sampleID);
+          activityPromises.push(p);
+          p.catch(Heatmap.logError);
         });
         // when the cache is ready, update the heatmap activity data
         return $q.all(activityPromises)

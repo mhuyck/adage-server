@@ -225,6 +225,14 @@ MathFuncts, errGen, MlModelTracker, Heatmap) {
       var groupedSamples = sg['base-group'].concat(sg['comp-group']);
       var notCached = Activity.listSamplesNotCached(groupedSamples);
       if (notCached.length > 0) {
+        // FIXME this needs to be smarter... retrieve any missing Activity
+        // 1. refactor Activity-related functions from heatmap.service.js and
+        //    sampleBin.js into activity.service.js
+        // 2. change this from an error into a pre-check that loads missing
+        //    data (using refactored methods) and then retries when the
+        //    promise resolves
+        // 3. update sample adding code to use refactored methods and preload
+        //    the Activity cache
         throw new Error('samples missing data: ' + notCached);
       }
 

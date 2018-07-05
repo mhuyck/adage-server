@@ -6,6 +6,9 @@ angular.module('adage.activity.service', [
 .factory('Activity', ['$cacheFactory', '$resource', '$q', '$log', 'ApiBasePath',
   function($cacheFactory, $resource, $q, $log, ApiBasePath) {
     var Activity = $resource(ApiBasePath + 'activity');
+    var logError = function(httpResponse) {
+      $log.error(errGen('Query errored', httpResponse));
+    };
 
     Activity.cache = $cacheFactory('activity');
 
@@ -51,9 +54,19 @@ angular.module('adage.activity.service', [
       });
     };
 
-    Activity.listSamplesNotCached = function(mlmodelID, sampleList) {
+    Activity.getForSampleList = function(mlmodelID, sampleIDList) {
+      var activityPromises = [];
+      sampleIDList.forEach(function(sampleID) {
+        var p = Activity.getForSample(mlmodelID, sampleID);
+        activityPromises.push(p);
+        p.catch(logError);
+      });
+      return activityPromises;
+    };
+
+    Activity.listSamplesNotCached = function(mlmodelID, sampleIDList) {
       var notCached = [];
-      sampleList.forEach(function(sampleID) {
+      sampleIDList.forEach(function(sampleID) {
         if (!Activity.getCache(mlmodelID, sampleID)) {
           notCached.push(sampleID);
         }

@@ -178,14 +178,10 @@ angular.module('adage.heatmap.service', [
         };
 
         // preflight the cache and request anything missing
-        var activityPromises = [];
-        Heatmap.vegaData.samples.forEach(function(sampleID) {
-          // FIXME this step needs to happen when sample is added
-          // (since we don't always view the heatmap before a volcano plot now)
-          var p = Activity.getForSample(Heatmap.mlmodel.id, sampleID);
-          activityPromises.push(p);
-          p.catch(Heatmap.logError);
-        });
+        var activityPromises = Activity.getForSampleList(
+          Heatmap.mlmodel.id,
+          Heatmap.vegaData.samples
+        );
         // when the cache is ready, update the heatmap activity data
         return $q.all(activityPromises)
           .then(updateHeatmapActivity)

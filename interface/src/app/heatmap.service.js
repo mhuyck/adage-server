@@ -95,7 +95,7 @@ angular.module('adage.heatmap.service', [
             'activity': Heatmap.vegaData.samples.map(
               // (2b) the array of activity for each signature is built by
               //      plucking the activity `.value` for each sample within the
-              //      `index`th signature from `Activity.cache` [inner .map()]
+              //      `index`th signature from the Activity cache [inner .map()]
               function(sampleId) {
                 var cachedActivity = Activity.getCache(
                   Heatmap.mlmodel.id,

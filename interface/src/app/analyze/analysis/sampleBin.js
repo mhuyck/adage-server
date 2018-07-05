@@ -240,8 +240,8 @@ MathFuncts, errGen, MlModelTracker, Heatmap) {
 
       // (1a) we obtain a list of signatures by retrieving signature activity
       //      for the first sample in our volcano plot
-      var firstSampleSignatures = Activity.cache
-        .get(sg['base-group'][0])
+      var firstSampleSignatures = Activity
+        .getCache(MlModelTracker.id, sg['base-group'][0])
         .map(function(val) {
           return val.signature;  // extract just the signature IDs
         }
@@ -260,7 +260,7 @@ MathFuncts, errGen, MlModelTracker, Heatmap) {
             var mapSampleIdsToActivity = function(sampleId) {
               // (2b) the array of activity for each signature is built by
               //      plucking the activity `.value` for each sample within the
-              //      `index`th signature from the `Activity.cache`
+              //      `index`th signature from the Activity cache
               //      [inner .map()]
               var cachedActivity = Activity.getCache(
                 MlModelTracker.id,

@@ -227,15 +227,18 @@ MathFuncts, errGen, MlModelTracker, Heatmap) {
         MlModelTracker.id, groupedSamples
       );
       if (notCached.length > 0) {
-        // FIXME this needs to be smarter... retrieve any missing Activity
-        // 1. refactor Activity-related functions from heatmap.service.js and
-        //    sampleBin.js into activity.service.js
-        // 2. change this from an error into a pre-check that loads missing
-        //    data (using refactored methods) and then retries when the
-        //    promise resolves
-        // 3. update sample adding code to use refactored methods and preload
-        //    the Activity cache
-        throw new Error('samples missing data: ' + notCached);
+        // we are missing some activity data, so fetch it & repeat this call
+        // when the data arrive
+        var activityPromises = Activity.getForSampleList(
+          MlModelTracker.id,
+          notCached
+        );
+        $log.warn('samples missing data: ' + notCached);
+        return $q.all(activityPromises).then(function() {
+          return cbSampleBin.getVolcanoPlotData();
+        });
+        // FIXME update sample adding code to use refactored methods and
+        //       preload the Activity cache
       }
 
       // (1a) we obtain a list of signatures by retrieving signature activity
